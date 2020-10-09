@@ -1,0 +1,9 @@
+[package]
+name = "lazylink"
+version = "0.1.0"
+authors = ["yskszk63 <yskszk63@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+lazylink-macro = { path = "./lazylink-macro" }
+libloading = "0.6"
