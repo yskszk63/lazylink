@@ -2,7 +2,7 @@
 
 Convert extern fn to libdl call.
 
-```
+```rust
 use lazylink::lazylink;
 
 /// comment!
@@ -34,7 +34,7 @@ fn main() {
 
 into
 
-```
+```rust
 #![feature(prelude_import)]
 #[prelude_import]
 use std::prelude::v1::*;
