@@ -1,6 +1,6 @@
 # lazylink
 
-Convert extern fn to libdl call.
+Convert extern fn to libdl call procedural macro.
 
 ```rust
 use lazylink::lazylink;

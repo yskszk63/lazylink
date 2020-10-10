@@ -1,6 +1,6 @@
 [package]
 name = "lazylink"
-description = "Convert extern fn to libdl call."
+description = "Convert extern fn to libdl call procedural macro."
 version = "0.1.0"
 authors = ["yskszk63 <yskszk63@gmail.com>"]
 categories = ["proc-macro", "libdl", "libloading"]

@@ -1,5 +1,5 @@
 #![doc(html_root_url = "https://docs.rs/lazylink/0.1.0")]
-//! Convert extern fn to libdl call.
+//! Convert extern fn to libdl call procedural macro.
 //!
 //! # Example
 //!
