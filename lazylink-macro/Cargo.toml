@@ -1,8 +1,12 @@
 [package]
 name = "lazylink-macro"
+description = "Convert extern fn to libdl call."
 version = "0.1.0"
 authors = ["yskszk63 <yskszk63@gmail.com>"]
+categories = ["proc-macro", "libdl", "libloading"]
 edition = "2018"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yskszk63/lazylink"
 
 [lib]
 proc-macro = true

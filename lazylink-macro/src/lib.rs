@@ -1,86 +1,20 @@
 use std::collections::{hash_map::DefaultHasher, HashMap};
+use std::fs;
 use std::hash::{Hash, Hasher};
 
 use proc_macro2::Span;
-use quote::ToTokens;
+use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream, Result as ParseResult};
+use syn::spanned::Spanned as _;
 use syn::{
-    self, parse_quote, Attribute, Expr, FnArg, ForeignItem, ForeignItemFn, Ident, Item, ItemMod,
-    Lit, LitByteStr, LitStr, Meta, MetaNameValue, NestedMeta, Pat, Path, Type,
+    self, parse_quote, token::Brace, Attribute, Expr, FnArg, ForeignItem, ForeignItemFn, Ident,
+    Item, ItemForeignMod, ItemMod, Lit, LitByteStr, LitStr, Meta, MetaNameValue, Pat, Path, Token,
+    Type,
 };
 
-fn link_name(attrs: &[Attribute]) -> Option<String> {
-    for attr in attrs {
-        match attr.parse_meta() {
-            Ok(Meta::List(list)) if list.path.is_ident("link") => {
-                let mut name = None;
-                let mut kind = None;
-                for nested in list.nested {
-                    match nested {
-                        NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                            path,
-                            lit: Lit::Str(s),
-                            ..
-                        })) if path.is_ident("name") => name = Some(s.value()),
-                        NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                            path,
-                            lit: Lit::Str(s),
-                            ..
-                        })) if path.is_ident("kind") => kind = Some(s.value()),
-                        _ => {}
-                    }
-                }
+use args::{Args, Input};
 
-                match kind.as_ref().map(String::as_str) {
-                    Some("dylib") | None if name.is_some() => return name,
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
-    }
-    None
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum Input {
-    Empty,
-    Name(String),
-    FullName(String),
-}
-
-impl Parse for Input {
-    fn parse(input: ParseStream) -> ParseResult<Self> {
-        if input.is_empty() {
-            return Ok(Self::Empty);
-        }
-
-        match input.parse::<NestedMeta>()? {
-            NestedMeta::Lit(Lit::Str(lit)) => Ok(Self::Name(lit.value())),
-            NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                path,
-                lit: Lit::Str(lit),
-                ..
-            })) if path.is_ident("name") => Ok(Self::Name(lit.value())),
-            NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                path,
-                lit: Lit::Str(lit),
-                ..
-            })) if path.is_ident("fullname") => Ok(Self::FullName(lit.value())),
-            _ => Err(input.error("unexpected")),
-        }
-    }
-}
-
-impl Input {
-    fn with_link_attr(&self, attrs: &[Attribute]) -> Self {
-        if let Some(name) = link_name(attrs) {
-            Self::Name(name)
-        } else {
-            self.clone()
-        }
-    }
-}
+mod args;
 
 fn fnarg_type<'a>(arg: &'a FnArg) -> Option<&'a Box<Type>> {
     match arg {
@@ -96,6 +30,29 @@ fn fnarg_pat<'a>(arg: &'a FnArg) -> Option<&'a Box<Pat>> {
     }
 }
 
+fn sym(fun: &ForeignItemFn) -> String {
+    let attrs = &fun.attrs;
+    for attr in attrs {
+        match attr.parse_meta() {
+            Ok(Meta::NameValue(MetaNameValue {
+                path,
+                lit: Lit::Str(s),
+                ..
+            })) if path.is_ident("link_name") => return s.value(),
+            _ => {}
+        }
+    }
+    return fun.sig.ident.to_string();
+}
+
+fn inheritable_attrs(attrs: &[Attribute]) -> Vec<Attribute> {
+    attrs
+        .iter()
+        .filter(|attr| attr.path.is_ident("cfg") || attr.path.is_ident("doc"))
+        .cloned()
+        .collect()
+}
+
 fn convert_foreign_fn(input: &Input, uniq: u64, funs: &[ForeignItemFn]) -> Vec<Item> {
     let krate: Ident = parse_quote! { lazylink };
 
@@ -103,17 +60,17 @@ fn convert_foreign_fn(input: &Input, uniq: u64, funs: &[ForeignItemFn]) -> Vec<I
         #krate::libloading
     };
 
-    let construct_library: Expr = match input {
+    let libname: Expr = match input {
         Input::Empty => {
-            parse_quote!(unreachable!()) // FIXME
+            parse_quote!(compile_error!("no name specified")) // FIXME
         }
         Input::Name(name) => {
             let name = LitStr::new(&name, Span::call_site());
-            parse_quote! { #libloading::Library::new(#libloading::library_filename(#name)) }
+            parse_quote! { #libloading::library_filename(#name) }
         }
         Input::FullName(name) => {
             let name = LitStr::new(&name, Span::call_site());
-            parse_quote! { #libloading::Library::new(#name) }
+            parse_quote! { #name }
         }
     };
 
@@ -122,6 +79,7 @@ fn convert_foreign_fn(input: &Input, uniq: u64, funs: &[ForeignItemFn]) -> Vec<I
     let mut idents = vec![];
     let mut tys = vec![] as Vec<Type>;
     let mut syms = vec![];
+    let mut attrs = vec![];
 
     for fun in funs {
         let sig = &fun.sig;
@@ -134,15 +92,22 @@ fn convert_foreign_fn(input: &Input, uniq: u64, funs: &[ForeignItemFn]) -> Vec<I
             #libloading::Symbol<'a, unsafe extern "C" fn(#(#argtys),*) #output>
         });
         syms.push(LitByteStr::new(
-            format!("{}\0", ident).as_ref(),
+            format!("{}\0", sym(fun)).as_ref(),
             Span::call_site(),
         ));
+        attrs.push(
+            fun.attrs
+                .iter()
+                .filter(|attr| !attr.path.is_ident("link_name"))
+                .collect::<Vec<_>>(),
+        );
     }
 
     let mut result = vec![
         parse_quote! {
             struct #struct_name<'a> {
-                #(#idents: #tys),*
+                #(#(#attrs)* #idents: #tys,)*
+                _phantom: std::marker::PhantomData<fn() -> &'a ()>,
             }
         },
         parse_quote! {
@@ -150,7 +115,8 @@ fn convert_foreign_fn(input: &Input, uniq: u64, funs: &[ForeignItemFn]) -> Vec<I
                 unsafe fn new(lib: &'a #libloading::Library)
                 -> Result<Self, #libloading::Error> {
                     Ok(Self {
-                        #(#idents: lib.get(#syms)?),*
+                        #(#(#attrs)* #idents: lib.get(#syms)?,)*
+                        _phantom: std::marker::PhantomData,
                     })
                 }
 
@@ -161,7 +127,7 @@ fn convert_foreign_fn(input: &Input, uniq: u64, funs: &[ForeignItemFn]) -> Vec<I
 
                     ONCE.call_once(|| {
                         unsafe {
-                            LIB = Some(#construct_library.unwrap());
+                            LIB = Some(#libloading::Library::new(#libname).unwrap());
                             FNS = Some(#struct_name::new(LIB.as_ref().unwrap()).unwrap());
                         }
                     });
@@ -174,7 +140,11 @@ fn convert_foreign_fn(input: &Input, uniq: u64, funs: &[ForeignItemFn]) -> Vec<I
     ];
 
     result.extend(funs.iter().map(|fun| {
-        let attrs = &fun.attrs;
+        let attrs = fun
+            .attrs
+            .iter()
+            .filter(|attr| !attr.path.is_ident("link_name"))
+            .collect::<Vec<_>>();
         let vis = &fun.vis;
         let mut sig = fun.sig.clone();
         let ident = &sig.ident;
@@ -196,19 +166,28 @@ fn take_foreign_items(
     iter: impl IntoIterator<Item = Item>,
     input: &Input,
     foreign_items: &mut HashMap<Input, Vec<ForeignItemFn>>,
-) -> Vec<Item> {
+) -> syn::Result<Vec<Item>> {
     let mut result = vec![];
 
     for item in iter {
         match item {
             Item::ForeignMod(foreign_mod) => {
                 let input = input.with_link_attr(&foreign_mod.attrs);
+                let attrs = foreign_mod.attrs;
                 for item in foreign_mod.items {
                     match item {
-                        ForeignItem::Fn(fun) => {
+                        ForeignItem::Fn(mut fun) => {
+                            let mut attrs = inheritable_attrs(&attrs);
+                            attrs.extend(fun.attrs);
+                            fun.attrs = attrs;
                             foreign_items.entry(input.clone()).or_default().push(fun)
                         }
-                        e => unimplemented!("{:?}", e),
+                        e => {
+                            return Err(syn::Error::new(
+                                e.span(),
+                                "currently supported extern fn only",
+                            ))
+                        }
                     }
                 }
             }
@@ -216,7 +195,106 @@ fn take_foreign_items(
         }
     }
 
-    result
+    Ok(result)
+}
+
+#[derive(Debug)]
+enum Target {
+    Mod(ItemMod),
+    ForeignMod(ItemForeignMod),
+}
+
+impl Parse for Target {
+    fn parse(input: ParseStream) -> ParseResult<Self> {
+        let attrs = input.call(Attribute::parse_outer)?;
+
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![mod]) {
+            input.parse::<ItemMod>().map(|mut item| {
+                item.attrs = attrs;
+                Self::Mod(item)
+            })
+        } else if lookahead.peek(Token![extern]) {
+            input.parse::<ItemForeignMod>().map(|mut item| {
+                item.attrs = attrs;
+                Self::ForeignMod(item)
+            })
+        } else {
+            Err(lookahead.error())
+        }
+    }
+}
+
+impl Target {
+    fn proc(self, args: &Args) -> syn::Result<proc_macro2::TokenStream> {
+        match self {
+            Self::Mod(item) => proc_mod(item, args),
+            Self::ForeignMod(item) => proc_foreign_mod(item, args),
+        }
+    }
+}
+
+fn proc_mod(mut target: ItemMod, args: &Args) -> syn::Result<proc_macro2::TokenStream> {
+    let Args { input, include } = args;
+
+    match (include, target.content.take()) {
+        (Some((path, span)), Some((brace, ref items))) => {
+            if !items.is_empty() {
+                return Err(syn::Error::new(items.iter().next().span(), "include but item already exists."))
+            }
+
+            let code = fs::read_to_string(&path)
+                .map_err(|e| syn::Error::new(span.clone(), format!("{} {:?}", e, path)))?;
+            let file = syn::parse_file(&code).map_err(|e| syn::Error::new(span.clone(), e))?;
+            target.content = Some((brace, file.items));
+        }
+
+        (Some((path, span)), None) => {
+            let code = fs::read_to_string(&path).map_err(|e| syn::Error::new(span.clone(), e))?;
+            let file = syn::parse_file(&code).map_err(|e| syn::Error::new(span.clone(), e))?;
+            target.content = Some((Brace(Span::call_site()), file.items));
+        }
+
+        (None, items) => target.content = items,
+    }
+
+    if let Some((brace, items)) = target.content.take() {
+        let mut foreign_items = HashMap::new();
+        let mut items = take_foreign_items(items, &input, &mut foreign_items)?;
+        for (input, funs) in foreign_items {
+            let mut hasher = DefaultHasher::default();
+            input.hash(&mut hasher);
+            items.extend(convert_foreign_fn(&input, hasher.finish(), &funs))
+        }
+        target.content = Some((brace, items));
+    }
+    Ok(target.into_token_stream().into())
+}
+
+fn proc_foreign_mod(
+    foreign_mod: ItemForeignMod,
+    args: &Args,
+) -> syn::Result<proc_macro2::TokenStream> {
+    let Args { input, include, .. } = args;
+
+    if let Some((_, span)) = include {
+        return Err(syn::Error::new(
+            span.clone(),
+            "can not include extern block.",
+        ));
+    }
+
+    let mut foreign_items = HashMap::new();
+    let mut items =
+        take_foreign_items(vec![foreign_mod.clone().into()], &input, &mut foreign_items)?;
+    for (input, funs) in foreign_items {
+        let mut hasher = DefaultHasher::default();
+        input.hash(&mut hasher);
+        items.extend(convert_foreign_fn(&input, hasher.finish(), &funs))
+    }
+    Ok(quote! {
+        #(#items)*
+    })
 }
 
 #[proc_macro_attribute]
@@ -224,17 +302,19 @@ pub fn lazylink(
     attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let input = syn::parse_macro_input!(attr as Input);
-    let mut mod_item = syn::parse_macro_input!(item as ItemMod);
-    if let Some((brace, items)) = mod_item.content.take() {
-        let mut foreign_items = HashMap::new();
-        let mut items = take_foreign_items(items, &input, &mut foreign_items);
-        for (input, funs) in foreign_items {
-            let mut hasher = DefaultHasher::default();
-            input.hash(&mut hasher);
-            items.extend(convert_foreign_fn(&input, hasher.finish(), &funs))
+    let original = proc_macro2::TokenStream::from(item.clone());
+    let args = syn::parse_macro_input!(attr as Args);
+    let target = syn::parse_macro_input!(item as Target);
+
+    match target.proc(&args) {
+        Ok(tokens) => tokens.into(),
+        Err(e) => {
+            let compile_error = e.to_compile_error();
+            (quote! {
+                #compile_error
+                #original
+            })
+            .into()
         }
-        mod_item.content = Some((brace, items));
     }
-    mod_item.into_token_stream().into()
 }

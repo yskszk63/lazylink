@@ -1,0 +1,5 @@
+error: can not include extern block.
+ --> $DIR/fail-externinclude.rs:1:27
+  |
+1 | #[lazylink::lazylink("c", include="aaa")]
+  |                           ^^^^^^^

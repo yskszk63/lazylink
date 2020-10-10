@@ -1,0 +1,7 @@
+error: unexpected end of input, name already specified.
+ --> $DIR/fail-duplicatename.rs:1:1
+  |
+1 | #[lazylink::lazylink(name="c", fullname="libc.so.6")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in an attribute macro (in Nightly builds, run with -Z macro-backtrace for more info)

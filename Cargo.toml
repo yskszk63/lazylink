@@ -1,9 +1,17 @@
 [package]
 name = "lazylink"
+description = "Convert extern fn to libdl call."
 version = "0.1.0"
 authors = ["yskszk63 <yskszk63@gmail.com>"]
+categories = ["proc-macro", "libdl", "libloading"]
+readme = "README.md"
 edition = "2018"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yskszk63/lazylink"
 
 [dependencies]
 lazylink-macro = { path = "./lazylink-macro" }
 libloading = "0.6"
+
+[dev-dependencies]
+trybuild = "1.0"
