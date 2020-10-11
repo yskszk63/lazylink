@@ -12,7 +12,7 @@ jobs:
       with:
         toolchain: stable
         override: true
-        profile: minimum
+        profile: minimal
         components: rustfmt, clippy
 
     - name: Check format
@@ -48,7 +48,7 @@ jobs:
       with:
         toolchain: nightly
         override: true
-        profile: minimum
+        profile: minimal
         components: rustfmt, clippy
 
     - name: Tests
