@@ -32,7 +32,7 @@ impl Parse for Args {
             match &item {
                 NestedMeta::Lit(Lit::Str(lit)) => {
                     if result.input != Input::Empty {
-                        return Err("name already specified.")
+                        return Err("name already specified.");
                     }
                     result.input = Input::Name(lit.value());
                 }
@@ -43,7 +43,7 @@ impl Parse for Args {
                     ..
                 })) if path.is_ident("name") => {
                     if result.input != Input::Empty {
-                        return Err("name already specified.")
+                        return Err("name already specified.");
                     }
                     result.input = Input::Name(lit.value());
                 }
@@ -54,7 +54,7 @@ impl Parse for Args {
                     ..
                 })) if path.is_ident("fullname") => {
                     if result.input != Input::Empty {
-                        return Err("name already specified.")
+                        return Err("name already specified.");
                     }
                     result.input = Input::FullName(lit.value());
                 }
