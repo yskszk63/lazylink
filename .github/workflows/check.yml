@@ -46,5 +46,7 @@ jobs:
 
     - name: Upload coverage
       uses: codecov/codecov-action@v1
+      with:
+        file: ${{ steps.coverage.outputs.report }}
 
 # vim: set ts=2 sts=2 sw=2:
