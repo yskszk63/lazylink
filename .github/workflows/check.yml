@@ -7,6 +7,10 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
     - uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --recursive --depth 1
 
     - uses: actions-rs/toolchain@v1
       with:
@@ -43,6 +47,10 @@ jobs:
     continue-on-error: true
     steps:
     - uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --recursive --depth 1
 
     - uses: actions-rs/toolchain@v1
       with:
