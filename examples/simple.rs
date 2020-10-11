@@ -18,9 +18,7 @@ mod libc {
 }
 
 fn main() {
-    let ver = unsafe {
-        zlib_version()
-    };
+    let ver = unsafe { zlib_version() };
     unsafe {
         libc::puts(ver);
     }
