@@ -23,8 +23,9 @@ jobs:
             git clone --depth 1 'https://github.com/raspberrypi/tools.git' ~/tools
             cat << EOF > ~/.cargo/config
         [target.${{ matrix.target }}]
-        linker = "${{ env.HOME }}/tools/arm-bcm2708/arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc"
+        linker = "arm-linux-gnueabihf-gcc"
         EOF
+            echo "::add-path::$HOME/tools/arm-bcm2708/arm-linux-gnueabihf/bin"
             ;;
           armv7-* )
             sudo apt install gcc-arm-linux-gnueabihf
