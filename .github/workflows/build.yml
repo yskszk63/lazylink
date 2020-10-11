@@ -18,6 +18,6 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: build
-      args: --release
+        args: --release
 
 # vim: set ts=2 sts=2 sw=2:
