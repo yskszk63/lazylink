@@ -15,9 +15,15 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           override: true
           profile: minimal
-    - uses: actions-rs/cargo@v1
+    - name: build
+      uses: actions-rs/cargo@v1
       with:
         command: build
         args: --release
+    - name: build examples
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release --examples
 
 # vim: set ts=2 sts=2 sw=2:
