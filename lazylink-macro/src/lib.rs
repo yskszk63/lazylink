@@ -240,7 +240,10 @@ fn proc_mod(mut target: ItemMod, args: &Args) -> syn::Result<proc_macro2::TokenS
     match (include, target.content.take()) {
         (Some((path, span)), Some((brace, ref items))) => {
             if !items.is_empty() {
-                return Err(syn::Error::new(items.iter().next().span(), "include but item already exists."))
+                return Err(syn::Error::new(
+                    items.iter().next().span(),
+                    "include but item already exists.",
+                ));
             }
 
             let code = fs::read_to_string(&path)
@@ -278,15 +281,11 @@ fn proc_foreign_mod(
     let Args { input, include, .. } = args;
 
     if let Some((_, span)) = include {
-        return Err(syn::Error::new(
-            *span,
-            "can not include extern block.",
-        ));
+        return Err(syn::Error::new(*span, "can not include extern block."));
     }
 
     let mut foreign_items = HashMap::new();
-    let mut items =
-        take_foreign_items(vec![foreign_mod.into()], &input, &mut foreign_items)?;
+    let mut items = take_foreign_items(vec![foreign_mod.into()], &input, &mut foreign_items)?;
     for (input, funs) in foreign_items {
         let mut hasher = DefaultHasher::default();
         input.hash(&mut hasher);

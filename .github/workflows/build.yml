@@ -16,6 +16,10 @@ jobs:
           - armv7-unknown-linux-gnueabihf
     steps:
     - uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --recursive --depth 1
     - name: install toolchain
       run: |
         case "${{ matrix.target }}" in
