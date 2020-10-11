@@ -7,8 +7,13 @@ jobs:
     runs-on: "ubuntu-20.04"
     strategy:
       matrix:
-        toolchain: [stable, nightly]
-        target: [x86_64-unknown-linux-gnu, arm-unknown-linux-gnueabihf, armv7-unknown-linux-gnueabihf]
+        toolchain:
+          - stable
+          - nightly
+        target:
+          - x86_64-unknown-linux-gnu
+          - arm-unknown-linux-gnueabihf
+          - armv7-unknown-linux-gnueabihf
     steps:
     - uses: actions/checkout@v2
     - name: install toolchain
@@ -17,14 +22,14 @@ jobs:
           arm-* )
             git clone --depth 1 'https://github.com/raspberrypi/tools.git' ~/tools
             cat << EOF > ~/.cargo/config
-        [${{ matrix.target }}]
+        [target.${{ matrix.target }}]
         linker = "${{ env.HOME }}/tools/arm-bcm2708/arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc"
         EOF
             ;;
           armv7-* )
             sudo apt install gcc-arm-linux-gnueabihf
             cat << EOF > ~/.cargo/config
-        [${{ matrix.target }}]
+        [target.${{ matrix.target }}]
         linker = "gcc-arm-linux-gnueabihf"
         EOF
             ;;
@@ -39,12 +44,12 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --release
+        args: --release --target ${{ matrix.target }}
     - name: build examples
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --release --examples
+        args: --release --target ${{ matrix.target }} --examples
     - name: dump readelf
       run: |
         find target/release/examples -type f -executable | xargs file
