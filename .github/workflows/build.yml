@@ -30,7 +30,7 @@ jobs:
             sudo apt install gcc-arm-linux-gnueabihf
             cat << EOF > ~/.cargo/config
         [target.${{ matrix.target }}]
-        linker = "gcc-arm-linux-gnueabihf"
+        linker = "arm-linux-gnueabihf-gcc"
         EOF
             ;;
         esac
