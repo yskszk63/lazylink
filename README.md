@@ -1,5 +1,7 @@
 # lazylink
 
+![build](https://github.com/yskszk63/lazylink/workflows/build/badge.svg)
+
 Convert extern fn to libdl call procedural macro.
 
 ```rust
