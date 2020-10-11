@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/yskszk63/lazylink"
 
 [dependencies]
-lazylink-macro = { path = "../lazylink-macro" }
+lazylink-macro = { path = "../lazylink-macro", version = "0.1.0" }
 libloading = "0.6"
 
 [dev-dependencies]
