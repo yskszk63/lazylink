@@ -46,6 +46,8 @@ jobs:
         command: build
         args: --release --examples
     - name: dump readelf
-      run: find target/release/examples -type f -executable | xargs -n1 readelf --arch-specific
+      run: |
+        find target/release/examples -type f -executable | xargs file
+        find target/release/examples -type f -executable | xargs -n1 readelf --arch-specific
 
 # vim: set ts=2 sts=2 sw=2:
