@@ -1,6 +1,8 @@
 # lazylink
 
 ![build](https://github.com/yskszk63/lazylink/workflows/build/badge.svg)
+![check](https://github.com/yskszk63/lazylink/workflows/check/badge.svg)
+[![tokio-pipe](https://docs.rs/lazylink/badge.svg)](https://docs.rs/lazylink)
 
 Convert extern fn to libdl call procedural macro.
 
