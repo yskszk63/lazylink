@@ -25,7 +25,7 @@ jobs:
         [target.${{ matrix.target }}]
         linker = "arm-linux-gnueabihf-gcc"
         EOF
-            echo "::add-path::$HOME/tools/arm-bcm2708/arm-linux-gnueabihf/bin"
+            echo "$HOME/tools/arm-bcm2708/arm-linux-gnueabihf/bin" >> $GITHUB_PATH
             ;;
           armv7-* )
             sudo apt install gcc-arm-linux-gnueabihf
