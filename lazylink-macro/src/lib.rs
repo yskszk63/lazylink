@@ -16,14 +16,14 @@ use args::{Args, Input};
 
 mod args;
 
-fn fnarg_type<'a>(arg: &'a FnArg) -> Option<&'a Box<Type>> {
+fn fnarg_type(arg: &FnArg) -> Option<&Type> {
     match arg {
         FnArg::Typed(ty) => Some(&ty.ty),
         _ => None,
     }
 }
 
-fn fnarg_pat<'a>(arg: &'a FnArg) -> Option<&'a Box<Pat>> {
+fn fnarg_pat(arg: &FnArg) -> Option<&Pat> {
     match arg {
         FnArg::Typed(ty) => Some(&ty.pat),
         _ => None,
@@ -42,7 +42,7 @@ fn sym(fun: &ForeignItemFn) -> String {
             _ => {}
         }
     }
-    return fun.sig.ident.to_string();
+    fun.sig.ident.to_string()
 }
 
 fn inheritable_attrs(attrs: &[Attribute]) -> Vec<Attribute> {
@@ -244,14 +244,14 @@ fn proc_mod(mut target: ItemMod, args: &Args) -> syn::Result<proc_macro2::TokenS
             }
 
             let code = fs::read_to_string(&path)
-                .map_err(|e| syn::Error::new(span.clone(), format!("{} {:?}", e, path)))?;
-            let file = syn::parse_file(&code).map_err(|e| syn::Error::new(span.clone(), e))?;
+                .map_err(|e| syn::Error::new(*span, format!("{} {:?}", e, path)))?;
+            let file = syn::parse_file(&code).map_err(|e| syn::Error::new(*span, e))?;
             target.content = Some((brace, file.items));
         }
 
         (Some((path, span)), None) => {
-            let code = fs::read_to_string(&path).map_err(|e| syn::Error::new(span.clone(), e))?;
-            let file = syn::parse_file(&code).map_err(|e| syn::Error::new(span.clone(), e))?;
+            let code = fs::read_to_string(&path).map_err(|e| syn::Error::new(*span, e))?;
+            let file = syn::parse_file(&code).map_err(|e| syn::Error::new(*span, e))?;
             target.content = Some((Brace(Span::call_site()), file.items));
         }
 
@@ -268,7 +268,7 @@ fn proc_mod(mut target: ItemMod, args: &Args) -> syn::Result<proc_macro2::TokenS
         }
         target.content = Some((brace, items));
     }
-    Ok(target.into_token_stream().into())
+    Ok(target.into_token_stream())
 }
 
 fn proc_foreign_mod(
@@ -279,14 +279,14 @@ fn proc_foreign_mod(
 
     if let Some((_, span)) = include {
         return Err(syn::Error::new(
-            span.clone(),
+            *span,
             "can not include extern block.",
         ));
     }
 
     let mut foreign_items = HashMap::new();
     let mut items =
-        take_foreign_items(vec![foreign_mod.clone().into()], &input, &mut foreign_items)?;
+        take_foreign_items(vec![foreign_mod.into()], &input, &mut foreign_items)?;
     for (input, funs) in foreign_items {
         let mut hasher = DefaultHasher::default();
         input.hash(&mut hasher);
