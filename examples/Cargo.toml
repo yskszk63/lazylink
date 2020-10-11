@@ -1,0 +1,16 @@
+[package]
+name = "examples"
+version = "0.0.0"
+publish = false
+edition = "2018"
+
+[dev-dependencies]
+lazylink = { path="../lazylink" }
+
+[[example]]
+name = "simple"
+path = "simple.rs"
+
+[[example]]
+name = "patched-libz-sys"
+path = "patched-libz-sys.rs"
