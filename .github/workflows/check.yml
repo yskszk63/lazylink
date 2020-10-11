@@ -10,8 +10,9 @@ jobs:
 
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
+        toolchain: stable
         override: true
+        profile: minimum
         components: rustfmt, clippy
 
     - name: Check format
@@ -30,6 +31,25 @@ jobs:
       uses: actions-rs/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --no-fail-fast
+
+  cov:
+    runs-on: "ubuntu-20.04"
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        profile: minimum
+        components: rustfmt, clippy
 
     - name: Tests
       uses: actions-rs/cargo@v1
