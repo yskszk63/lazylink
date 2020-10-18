@@ -123,7 +123,7 @@ fn convert_foreign_fn(input: &Input, uniq: u64, funs: &[ForeignItemFn]) -> Vec<I
                 fn get() -> &'static #struct_name<'static> {
                     static mut LIB: Option<#libloading::Library> = None;
                     static mut FNS: Option<#struct_name<'static>> = None;
-                    const ONCE: std::sync::Once = std::sync::Once::new();
+                    static ONCE: std::sync::Once = std::sync::Once::new();
 
                     ONCE.call_once(|| {
                         unsafe {

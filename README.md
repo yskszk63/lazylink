@@ -64,7 +64,7 @@ ntom : std :: marker :: PhantomData , },
     fn get() -> &'static __LazyLinkbfde0578a8e5d844<'static> {
         static mut LIB: Option<lazylink::libloading::Library> = None;
         static mut FNS: Option<__LazyLinkbfde0578a8e5d844<'static>> = None;
-        const ONCE: std::sync::Once = std::sync::Once::new();
+        static ONCE: std::sync::Once = std::sync::Once::new();
         ONCE.call_once(|| unsafe {
             LIB = Some(
                 lazylink::libloading::Library::new(lazylink::libloading::library_filename("z"))
