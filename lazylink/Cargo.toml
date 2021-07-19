@@ -11,7 +11,7 @@ repository = "https://github.com/yskszk63/lazylink"
 
 [dependencies]
 lazylink-macro = { path = "../lazylink-macro", version = "0.1.2-dev" }
-libloading = "0.6"
+libloading = "0.7"
 
 [dev-dependencies]
 trybuild = "1.0"
