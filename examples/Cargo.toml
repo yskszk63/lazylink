@@ -5,7 +5,7 @@ publish = false
 edition = "2018"
 
 [dev-dependencies]
-lazylink = { path="../lazylink" }
+lazylink = { path=".." }
 
 [[example]]
 name = "simple"
