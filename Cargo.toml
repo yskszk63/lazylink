@@ -1,7 +1,7 @@
 [package]
 name = "lazylink"
 description = "Convert extern fn to libdl call procedural macro."
-version = "0.1.2-dev"
+version = "0.1.2"
 authors = ["yskszk63 <yskszk63@gmail.com>"]
 categories = ["development-tools::ffi", "os::unix-apis"]
 readme = "../README.md"
@@ -16,7 +16,7 @@ name = "tests"
 path = "tests/test.rs"
 
 [dependencies]
-lazylink-macro = { path = "macro", version = "0.1.2-dev" }
+lazylink-macro = { path = "macro", version = "0.1.2" }
 libloading = "0.7"
 
 [dev-dependencies]
