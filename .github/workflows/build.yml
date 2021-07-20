@@ -54,7 +54,7 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --release --target ${{ matrix.target }} --examples
+        args: --release --target ${{ matrix.target }} -p examples --examples
     - name: dump readelf
       run: |
         find target/*/release/examples -type f -executable | xargs file
