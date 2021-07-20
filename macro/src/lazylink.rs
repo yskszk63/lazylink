@@ -48,7 +48,7 @@ impl Args {
                 kind,
             }) = link
             {
-                if kind.map(|k| k.value()).unwrap_or("dyn".into()) == "dyn" {
+                if kind.map(|k| k.value()).unwrap_or_else(|| "dyn".into()) == "dyn" {
                     Ok(Some(Input::Name(name)))
                 } else {
                     Ok(None)
@@ -365,12 +365,10 @@ fn proc(attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
             proc_mod(&mut args, item)?;
             Ok(quote! { #item })
         }
-        _ => {
-            return Err(syn::Error::new_spanned(
-                item,
-                "expect extern \"C\" mod { .. } or mod { .. }",
-            ))
-        }
+        _ => Err(syn::Error::new_spanned(
+            item,
+            "expect extern \"C\" mod { .. } or mod { .. }",
+        )),
     }
 }
 
