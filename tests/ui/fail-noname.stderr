@@ -1,7 +1,7 @@
-error: no name specified
- --> $DIR/fail-noname.rs:1:1
+error: expect `#[lazylink(name = "..", ..)]` or `#[link(name = "..")]`
+ --> $DIR/fail-noname.rs:3:5
   |
-1 | #[lazylink::lazylink]
-  | ^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this error originates in an attribute macro (in Nightly builds, run with -Z macro-backtrace for more info)
+3 | /     extern "C" {
+4 | |         fn puts(v: *const i8);
+5 | |     }
+  | |_____^

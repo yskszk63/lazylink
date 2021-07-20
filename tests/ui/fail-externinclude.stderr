@@ -1,0 +1,5 @@
+error: include or include_outdir not supported at extern "C" { .. }
+ --> $DIR/fail-externinclude.rs:2:1
+  |
+2 | extern "C" {}
+  | ^^^^^^^^^^^^^
